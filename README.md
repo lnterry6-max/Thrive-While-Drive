@@ -1,11 +1,23 @@
 # Thrive While You Drive
 
-A mobile-first exploration and scenic-driving app. Plan time-based loops, discover roads, and share community routes.
+An early-stage mobile-first driving exploration application.
 
-## Development
+## Local setup
 
-The initial implementation uses React, TypeScript, Vite, Supabase and MapLibre. Development is tracked on feature branches. No live navigation or GPS tracking is implemented yet.
+1. Install Node.js 20+.
+2. Run `npm install`.
+3. Copy `.env.example` to `.env.local`.
+4. Enter the **new Thrive Supabase project** URL and publishable/anon key. Never use AutoType credentials.
+5. Review and apply `supabase/migrations/202610130001_initial_foundation.sql` in the new project.
+6. Optionally set `VITE_MAP_STYLE_URL` to a licensed MapLibre-compatible style URL.
+7. Run `npm run dev`.
 
-## Safety
+## Checks
 
-Routing and road conditions must be verified before use. The app will never reward unsafe driving or expose private home locations in community routes.
+Run `npm run typecheck`, `npm run build`, and `npm run test`.
+
+## Status
+
+This first milestone contains a responsive application shell, initial drive planner, optional map rendering, sign-in/up forms, profiles and tags. **Live route generation, location search, traffic estimates, GPS recording and turn-by-turn guidance are not implemented.** The route-generation button is intentionally disabled.
+
+See [roadmap](docs/ROADMAP.md).
