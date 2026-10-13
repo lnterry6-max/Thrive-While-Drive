@@ -7,10 +7,12 @@ An early-stage mobile-first driving exploration application.
 1. Install Node.js 20+.
 2. Run `npm install`.
 3. Copy `.env.example` to `.env.local`.
-4. Enter the **new Thrive Supabase project** URL and publishable/anon key. Never use AutoType credentials.
-5. Review and apply `supabase/migrations/202610130001_initial_foundation.sql` in the new project.
+4. Enter the **new Thrive Supabase project's** `sb_publishable_` key as `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local`. The project URL is already supplied in the example.
+5. The initial SQL migration has been applied to the **Thrive** project (`nnpehyhqomhbznvjwtsl`). Do **not** re-run it against the live project. Use migrations for future changes.
 6. Optionally set `VITE_MAP_STYLE_URL` to a licensed MapLibre-compatible style URL.
 7. Run `npm run dev`.
+
+For deployment, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the hosting provider's environment variable settings. **Never** add secret keys or database passwords to `VITE_` variables. `.env.local` is ignored by Git.
 
 ## Checks
 
