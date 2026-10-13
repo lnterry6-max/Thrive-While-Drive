@@ -1,10 +1,10 @@
 # Development roadmap
 
-- **0.1 (this branch):** React + TypeScript UI, configurable Supabase Auth, private profiles, drive planner with clearly unavailable live routing.
-- **0.2:** Real geocoding, map tile provider, outbound/return travel estimates.
-- **0.3:** Routing engine and loop selection with validation and safety constraints.
-- **0.4:** Opt-in GPS session tracking, map-matched road discovery and private analytics.
-- **0.5:** Community route recording, editing, publication and moderation.
-- **Later:** Friends, family permissions, music integrations and subscriptions.
+- **0.1 — complete:** foundation build, dependency and session/profile fixes; automated checks and CI.
+- **0.2 — implemented:** scenic responsive design, real licensed photography, account recovery/settings, usernames/bios, avatars/banners, privacy, deletion, saved planner defaults and database policy tests. Controlled live account-flow testing remains before release.
+- **Next:** complete the release checklist, improve accessibility through assistive-technology testing, and select a licensed map/geocoding provider with clear privacy and cost limits.
+- **Future routing:** real place search, outbound/return estimates, route validation and safety constraints. Keep essential safety preferences free.
+- **Later:** opt-in GPS recording, private road discovery/analytics, community route publication/moderation, achievements and friends.
+- **Separate future scope:** family permissions, music integrations and subscriptions.
 
-Not yet implemented: live route generation, traffic avoidance, navigation, GPS recording, road unlocking, and social/family features.
+There is no GPS recording, navigation, live route generation, traffic avoidance engine, fabricated statistics or payment integration in v0.2. Planning inputs are not persisted as private home locations. Plan while parked.
