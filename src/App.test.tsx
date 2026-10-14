@@ -45,25 +45,30 @@ it("renders the scenic homepage with local responsive photography", () => {
     "/explore",
   );
 });
-it("keeps all planner controls working and routing disabled", async () => {
+it("renders discovery-loop controls and keeps routes gated until configured", async () => {
   page("/explore");
-  await userEvent.type(
-    screen.getByLabelText("Explore a city or area"),
-    "Boston",
+  expect(screen.getByRole("button", { name: /Discovery loop/i })).toHaveAttribute(
+    "aria-pressed", "true",
   );
-  await userEvent.selectOptions(screen.getByLabelText("Time exploring"), "45");
   await userEvent.selectOptions(
-    screen.getByLabelText("Drive style"),
-    "Relaxing",
+    screen.getByLabelText("Target time exploring"), "45",
   );
-  expect(screen.getByText("Boston")).toBeVisible();
-  expect(screen.getByText("45 minutes exploring · Relaxing")).toBeVisible();
+  await userEvent.selectOptions(
+    screen.getByLabelText("Preferred drive style"), "Relaxing",
+  );
+  expect(screen.getByLabelText("Target time exploring")).toHaveValue("45");
+  expect(screen.getByLabelText("Preferred drive style")).toHaveValue("Relaxing");
   expect(screen.getByRole("button", { name: /Generate route/ })).toBeDisabled();
+  await userEvent.click(screen.getByRole("button", { name: /Point to point/i }));
+  expect(screen.getByRole("button", { name: /Point to point/i })).toHaveAttribute(
+    "aria-pressed", "true",
+  );
+  expect(screen.getByText("Ending location")).toBeVisible();
 });
 it("uses homepage planning presets", () => {
   page("/explore?style=Relaxing&minutes=45");
-  expect(screen.getByLabelText("Time exploring")).toHaveValue("45");
-  expect(screen.getByLabelText("Drive style")).toHaveValue("Relaxing");
+  expect(screen.getByLabelText("Target time exploring")).toHaveValue("45");
+  expect(screen.getByLabelText("Preferred drive style")).toHaveValue("Relaxing");
 });
 it.each([
   ["/community", "Some things are better shared."],
