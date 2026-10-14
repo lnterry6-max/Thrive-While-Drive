@@ -38,3 +38,15 @@ Default map style: `https://tiles.openfreemap.org/styles/liberty`; optional over
 - Do **not** merge this branch or launch as public navigation until live provider, privacy, safety and mobile-device checks are complete.
 
 References: https://openfreemap.org/quick_start/ · https://docs.graphhopper.com/openapi/section/explore-our-apis/api-explorer · https://vercel.com/docs/functions/runtimes/node-js
+
+## GraphHopper preview verification after adding the server key
+
+The owner configures `GRAPH_HOPPER_API_KEY` as a **sensitive, Preview-only variable restricted to `feature/v0.3-maps-routing`**. No key value belongs in this repository. A new branch commit triggers Vercel to rebuild with the updated environment.
+
+1. Open the **feature/v0.3-maps-routing** preview (not the stable `development` preview).
+2. Confirm the JSON endpoint `/api/planner?action=status` reports `routing: true`; that only confirms the key is present, **not** that GraphHopper accepts it.
+3. Sign in and try a short geocoding search for a town you know; select a result, then try a simple point-to-point route between two nearby places.
+4. Test a short discovery loop, an exploration-area loop, and the no-highways option. A provider error must be reported rather than covered up by fabricated route geometry.
+5. Watch **GraphHopper Analytics** for actual API usage and credit charges. Pause tests and fix any repeated errors before public access.
+
+Do not paste API keys, Supabase access tokens, or other credentials into issue reports or screenshots.
