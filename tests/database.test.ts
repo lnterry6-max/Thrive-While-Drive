@@ -39,6 +39,12 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/20261014024737_profile_media_jpeg_fallback_v021.sql",
+      "utf8",
+    ),
+  );
 }, 30000);
 afterAll(() => db.close());
 async function asUser<T>(
@@ -175,7 +181,7 @@ describe("PostgreSQL migration and authorization (local auth/storage fixture)", 
       asUser("", () => db.query("select * from drive_preferences"), "anon"),
     ).rejects.toThrow(/permission denied/);
   });
-  it("restricts uploads to the owner folder and immutable webp paths", async () => {
+  it("restricts WebP/JPEG uploads to owner folders with approved extensions", async () => {
     await asUser(a, () =>
       db.exec(
         `insert into storage.objects(bucket_id,name) values ('profile-media','${a}/avatar/aaa.webp')`,
@@ -188,6 +194,25 @@ describe("PostgreSQL migration and authorization (local auth/storage fixture)", 
         ),
       ),
     ).rejects.toThrow(/row-level security/);
+    await asUser(a, () =>
+      db.exec(
+        `insert into storage.objects(bucket_id,name) values ('profile-media','${a}/banner/aaa.jpg')`,
+      ),
+    );
+    await expect(
+      asUser(a, () =>
+        db.exec(
+          `insert into storage.objects(bucket_id,name) values ('profile-media','${b}/banner/aaa.jpg')`,
+        ),
+      ),
+    ).rejects.toThrow(/row-level security/);
+    await expect(
+      asUser(a, () =>
+        db.exec(
+          `insert into storage.objects(bucket_id,name) values ('profile-media','${a}/avatar/aaa.png')`,
+        ),
+      ),
+    ).rejects.toThrow(/row-level security/);
     await expect(
       asUser(a, () =>
         db.exec(
@@ -195,6 +220,23 @@ describe("PostgreSQL migration and authorization (local auth/storage fixture)", 
         ),
       ),
     ).rejects.toThrow(/row-level security/);
+  });
+  it("accepts a caller-owned JPEG avatar reference but rejects incorrect folders", async () => {
+    await asUser(a, async () => {
+      await db.exec(
+        `update profiles set avatar_path='${a}/avatar/aaa.jpg' where id='${a}'`,
+      );
+      const { rows } = await db.query<{ avatar_path: string }>(
+        "select avatar_path from profiles where id=$1",
+        [a],
+      );
+      expect(rows[0].avatar_path).toBe(`${a}/avatar/aaa.jpg`);
+      await expect(
+        db.exec(
+          `update profiles set avatar_path='${a}/banner/aaa.jpg' where id='${a}'`,
+        ),
+      ).rejects.toThrow(/avatar_owned_path/);
+    });
   });
   it("rejects another account’s media reference", async () => {
     await expect(
@@ -271,7 +313,7 @@ describe("PostgreSQL migration and authorization (local auth/storage fixture)", 
       {
         public: false,
         file_size_limit: 5242880,
-        allowed_mime_types: ["image/webp"],
+        allowed_mime_types: ["image/webp", "image/jpeg"],
       },
     ]);
   });
