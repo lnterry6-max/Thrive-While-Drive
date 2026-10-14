@@ -47,16 +47,26 @@ export async function prepareImage(file: File, kind: ImageKind): Promise<Blob> {
         "Your browser cannot prepare images. Try a current browser.",
       );
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob(
-        (value) =>
-          value?.type === "image/webp"
-            ? resolve(value)
-            : reject(new Error("WebP export is unavailable in this browser.")),
-        "image/webp",
-        0.85,
-      ),
-    );
+    const encode = (type: "image/webp" | "image/jpeg") =>
+      new Promise<Blob | null>((resolve) => {
+        try {
+          canvas.toBlob(resolve, type, 0.85);
+        } catch {
+          resolve(null);
+        }
+      });
+    let blob = await encode("image/webp");
+    if (blob?.type !== "image/webp") {
+      // Safari may return PNG for unsupported WebP. JPEG needs an opaque
+      // background, so flatten transparent pixels onto white.
+      context.globalCompositeOperation = "destination-over";
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.globalCompositeOperation = "source-over";
+      blob = await encode("image/jpeg");
+      if (blob?.type !== "image/jpeg")
+        throw new Error("This browser cannot prepare your photo. Try another current browser.");
+    }
     if (blob.size > MAX_IMAGE_BYTES)
       throw new Error(
         "This image is too large after processing. Choose a smaller photo.",
@@ -76,10 +86,12 @@ export async function uploadProfileImage(
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError || auth.user?.id !== profile.id)
     throw new Error("Your session changed. Sign in again before uploading.");
-  const path = `${profile.id}/${kind}/${crypto.randomUUID()}.webp`;
+  const extension = blob.type === "image/webp" ? "webp" : blob.type === "image/jpeg" ? "jpg" : null;
+  if (!extension) throw new Error("The prepared image has an unsupported format.");
+  const path = `${profile.id}/${kind}/${crypto.randomUUID()}.${extension}`;
   const bucket = supabase.storage.from(MEDIA_BUCKET);
   const { error } = await bucket.upload(path, blob, {
-    contentType: "image/webp",
+    contentType: blob.type,
     upsert: false,
     cacheControl: "60",
   });
