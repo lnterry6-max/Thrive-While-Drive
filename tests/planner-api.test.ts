@@ -40,8 +40,9 @@ describe("protected location and routing API", () => {
   it("reports provider readiness without disclosing a credential", async () => {
     const response = await planner.fetch(asRequest("status"));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ maps: true, routing: true });
-    expect(await response.clone().text()).not.toContain("test-secret-not-for-browser");
+    const text = await response.text();
+    expect(JSON.parse(text)).toEqual({ maps: true, routing: true });
+    expect(text).not.toContain("test-secret-not-for-browser");
   });
 
   it("does not call the provider when the server key is missing", async () => {
