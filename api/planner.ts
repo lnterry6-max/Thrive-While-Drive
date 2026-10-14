@@ -197,8 +197,9 @@ async function searchPlaces(q: string, apiKey: string): Promise<Place[]> {
  * Vercel API proxy. The provider key stays server-side. Signed-in users only;
  * no location history, user profile updates, or route tracking.
  */
-export default async function handler(request: Request): Promise<Response> {
-    const url = new URL(request.url);
+async function handlePlanner(request: Request): Promise<Response> {
+    // Accept absolute Web Request URLs and relative legacy runtime URLs.
+    const url = new URL(request.url, "https://planner.internal");
     const action = url.searchParams.get("action");
     if (request.method === "GET" && action === "status")
       return json({ maps: true, routing: Boolean(process.env.GRAPH_HOPPER_API_KEY) });
@@ -227,4 +228,13 @@ export default async function handler(request: Request): Promise<Response> {
       const message = error instanceof Error ? error.message : "Route generation failed.";
       return json({ error: message }, 502);
     }
+}
+
+// HTTP method exports use Vercel's documented Web Handler contract.
+export function GET(request: Request): Promise<Response> {
+  return handlePlanner(request);
+}
+
+export function POST(request: Request): Promise<Response> {
+  return handlePlanner(request);
 }
