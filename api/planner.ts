@@ -197,8 +197,7 @@ async function searchPlaces(q: string, apiKey: string): Promise<Place[]> {
  * Vercel API proxy. The provider key stays server-side. Signed-in users only;
  * no location history, user profile updates, or route tracking.
  */
-export default {
-  async fetch(request: Request): Promise<Response> {
+export default async function handler(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const action = url.searchParams.get("action");
     if (request.method === "GET" && action === "status")
@@ -228,5 +227,4 @@ export default {
       const message = error instanceof Error ? error.message : "Route generation failed.";
       return json({ error: message }, 502);
     }
-  },
-};
+}
