@@ -64,7 +64,7 @@ function Shell() {
           ))}
         </nav>
         <div className="header-actions">
-          <span className="beta">BETA 0.2</span>
+          <span className="beta">BETA 0.3</span>
           <Link className="account-link" to="/profile">
             <UserRound size={18} />
             <span>{session ? "My profile" : "Join the journey"}</span>
