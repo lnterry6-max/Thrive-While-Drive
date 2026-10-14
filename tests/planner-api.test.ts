@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import planner from "../api/planner";
+import { GET, POST } from "../api/planner";
 
 
 const origin = "https://preview.vercel.app";
@@ -38,12 +38,19 @@ afterEach(() => {
 });
 
 describe("protected location and routing API", () => {
-  it("exports a callable Vercel request handler", () => {
-    expect(typeof planner).toBe("function");
+  it("exports standard GET and POST Vercel handlers", () => {
+    expect(typeof GET).toBe("function");
+    expect(typeof POST).toBe("function");
+  });
+
+  it("parses a relative runtime request URL without throwing", async () => {
+    const req = { url: "/api/planner?action=status", method: "GET" } as Request;
+    const response = await GET(req);
+    expect(await response.json()).toEqual({ maps: true, routing: true });
   });
 
   it("reports provider readiness without disclosing a credential", async () => {
-    const response = await planner(asRequest("status"));
+    const response = await GET(asRequest("status"));
     expect(response.status).toBe(200);
     const text = await response.text();
     expect(JSON.parse(text)).toEqual({ maps: true, routing: true });
@@ -54,7 +61,7 @@ describe("protected location and routing API", () => {
     vi.stubEnv("GRAPH_HOPPER_API_KEY", "");
     const spy = vi.fn();
     vi.stubGlobal("fetch", spy);
-    const result = await planner(asRequest("search"));
+    const result = await GET(asRequest("search"));
     expect(result.status).toBe(503);
     expect(spy).not.toHaveBeenCalled();
   });
@@ -62,7 +69,7 @@ describe("protected location and routing API", () => {
   it("requires a valid Supabase session before making paid requests", async () => {
     const spy = vi.fn();
     vi.stubGlobal("fetch", spy);
-    const response = await planner(new Request(`${origin}/api/planner?action=search&q=Boston`));
+    const response = await GET(new Request(`${origin}/api/planner?action=search&q=Boston`));
     expect(response.status).toBe(401);
     expect(spy).not.toHaveBeenCalled();
   });
@@ -81,7 +88,7 @@ describe("protected location and routing API", () => {
     const request = new Request(`${origin}/api/planner?action=search&q=Boston`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const response = await planner(request);
+    const response = await GET(request);
     const data = await response.json() as { places: Array<{label: string;latitude: number}> };
     expect(response.status).toBe(200);
     expect(data.places).toHaveLength(1);
@@ -92,7 +99,7 @@ describe("protected location and routing API", () => {
   it("rejects invalid route data before contacting a routing provider", async () => {
     const mockFetch = vi.fn().mockResolvedValue(fakeAuth());
     vi.stubGlobal("fetch", mockFetch);
-    const response = await planner(asRequest("route", {
+    const response = await POST(asRequest("route", {
       mode: "loop", start: { ...place, latitude: 1000 }, area: null, end: null,
       minutes: 30, avoidHighways: true, seed: 0,
     }));
@@ -105,7 +112,7 @@ describe("protected location and routing API", () => {
       .mockResolvedValueOnce(fakeAuth())
       .mockResolvedValueOnce(Response.json(fakeRoute));
     vi.stubGlobal("fetch", mockFetch);
-    const response = await planner(asRequest("route", {
+    const response = await POST(asRequest("route", {
       mode: "one-way", start: place, area: null, end: destination,
       minutes: 30, avoidHighways: true, seed: 0,
     }));
@@ -129,7 +136,7 @@ describe("protected location and routing API", () => {
       .mockResolvedValueOnce(Response.json(fakeRoute))
       .mockResolvedValueOnce(Response.json(fakeRoute));
     vi.stubGlobal("fetch", mockFetch);
-    const response = await planner(asRequest("route", {
+    const response = await POST(asRequest("route", {
       mode: "loop", start: place, area: destination, end: null,
       minutes: 45, avoidHighways: false, seed: 2,
     }));
@@ -150,7 +157,7 @@ describe("protected location and routing API", () => {
       .mockResolvedValueOnce(fakeAuth())
       .mockResolvedValueOnce(Response.json({ message: "No route" }, { status: 400 }));
     vi.stubGlobal("fetch", mockFetch);
-    const response = await planner(asRequest("route", {
+    const response = await POST(asRequest("route", {
       mode: "one-way", start: place, area: null, end: destination,
       minutes: 30, avoidHighways: true, seed: 0,
     }));
