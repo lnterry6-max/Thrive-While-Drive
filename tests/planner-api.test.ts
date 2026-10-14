@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import planner from "../api/planner";
 
+
 const origin = "https://preview.vercel.app";
 const token = "test-access-token";
 const place = {
@@ -37,8 +38,12 @@ afterEach(() => {
 });
 
 describe("protected location and routing API", () => {
+  it("exports a callable Vercel request handler", () => {
+    expect(typeof planner).toBe("function");
+  });
+
   it("reports provider readiness without disclosing a credential", async () => {
-    const response = await planner.fetch(asRequest("status"));
+    const response = await planner(asRequest("status"));
     expect(response.status).toBe(200);
     const text = await response.text();
     expect(JSON.parse(text)).toEqual({ maps: true, routing: true });
