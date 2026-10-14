@@ -43,13 +43,15 @@ it("rejects spoofed image signatures before decoding", async () => {
 function imageMocks() {
   const close = vi.fn();
   const drawImage = vi.fn();
+  const fillRect = vi.fn();
+  const context = { drawImage, fillRect, fillStyle: "", globalCompositeOperation: "source-over" };
   vi.stubGlobal(
     "createImageBitmap",
     vi.fn().mockResolvedValue({ width: 2400, height: 1600, close }),
   );
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
-    drawImage,
-  } as unknown as CanvasRenderingContext2D);
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+    context as unknown as CanvasRenderingContext2D,
+  );
   vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(
     (callback) =>
       callback(new Blob(["converted pixels"], { type: "image/webp" })),
@@ -61,7 +63,7 @@ function imageMocks() {
       arrayBuffer: async () => new Uint8Array([255, 216, 255]).buffer,
     }),
   } as unknown as File;
-  return { close, drawImage, file };
+  return { close, drawImage, fillRect, context, file };
 }
 it("resizes and re-encodes uploads as WebP, closing the decoded bitmap", async () => {
   const { file, close, drawImage } = imageMocks();
@@ -69,6 +71,49 @@ it("resizes and re-encodes uploads as WebP, closing the decoded bitmap", async (
   expect(blob.type).toBe("image/webp");
   expect(drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0, 512, 341);
   expect(close).toHaveBeenCalledOnce();
+});
+it("falls back to JPEG when Safari returns PNG for WebP export", async () => {
+  const { file, fillRect, context } = imageMocks();
+  const formats: string[] = [];
+  vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback, type) => {
+    formats.push(type ?? "");
+    callback(
+      new Blob(["encoded"], {
+        type: type === "image/webp" ? "image/png" : "image/jpeg",
+      }),
+    );
+  });
+  const blob = await prepareImage(file, "banner");
+  expect(blob.type).toBe("image/jpeg");
+  expect(formats).toEqual(["image/webp", "image/jpeg"]);
+  expect(fillRect).toHaveBeenCalledWith(0, 0, 1600, 1067);
+  expect(context.globalCompositeOperation).toBe("source-over");
+});
+it("falls back to JPEG when WebP encoding returns null", async () => {
+  const { file } = imageMocks();
+  vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback, type) => {
+    callback(type === "image/webp" ? null : new Blob(["jpeg"], { type: "image/jpeg" }));
+  });
+  expect((await prepareImage(file, "avatar")).type).toBe("image/jpeg");
+});
+it("reports an error if neither WebP nor JPEG can be encoded", async () => {
+  const { file } = imageMocks();
+  vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback) =>
+    callback(new Blob(["not an accepted output"], { type: "image/png" })),
+  );
+  await expect(prepareImage(file, "avatar")).rejects.toThrow(/cannot prepare your photo/);
+});
+it("uploads a JPEG fallback with the matching extension and MIME type", async () => {
+  const { file } = imageMocks();
+  vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback, type) =>
+    callback(type === "image/webp" ? null : new Blob(["jpeg"], { type: "image/jpeg" })),
+  );
+  await uploadProfileImage(profileFixture as ProfileRecord, "avatar", file);
+  expect(mock.upload).toHaveBeenCalledWith(
+    expect.stringMatching(/^user-a\/avatar\/[a-f0-9-]+\.jpg$/),
+    expect.objectContaining({ type: "image/jpeg" }),
+    { contentType: "image/jpeg", upsert: false, cacheControl: "60" },
+  );
 });
 it("rejects excessive decoded dimensions", async () => {
   const { file } = imageMocks();
