@@ -31,7 +31,6 @@ export default function MapPreview({
           style,
           center: [-97, 39],
           zoom: 3.7,
-          attributionControl: true,
         });
         currentMap.current = map;
         map.on("load", () => {
