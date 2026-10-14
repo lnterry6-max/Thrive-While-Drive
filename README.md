@@ -1,16 +1,23 @@
 # Thrive While You Drive
 
-Version 0.2 is a mobile-first scenic driving planner and account experience built with React, TypeScript, Vite and Supabase. Real navigation, GPS recording and route publishing are future work; the planner clearly labels those limits.
+Version 0.3 (feature-branch beta) adds real interactive OpenStreetMap maps, an authenticated location-search API and provider-ready route previews to the existing v0.2 account experience. Routes require a server-side GraphHopper API key and real-provider testing; this is not live navigation or GPS recording.
 
 ## Local setup
 
 1. Use Node.js 24 (`nvm use`).
 2. Run `npm ci`.
 3. Copy `.env.example` to `.env.local` and set `VITE_SUPABASE_PUBLISHABLE_KEY` to the Thrive project's `sb_publishable_` key. The example includes the URL for project `nnpehyhqomhbznvjwtsl`.
-4. Optionally supply a licensed MapLibre-compatible `VITE_MAP_STYLE_URL`. Without it, the planner shows an intentional map placeholder.
-5. Run `npm run dev`.
+4. MapLibre defaults to real OpenFreeMap vector tiles with attribution. Optionally supply a licensed MapLibre-compatible `VITE_MAP_STYLE_URL`.
+5. To enable **location search and routing on Vercel**, configure server-only `GRAPH_HOPPER_API_KEY` in the Preview environment. This must not be a `VITE_` variable. Without it, the public map still works, while search and route generation are clearly unavailable.
+6. Run `npm run dev`. The Vercel route API is not available through Vite's standalone dev server; use the Vercel preview for integration tests.
 
 Only publishable configuration belongs in `VITE_` variables: Vite embeds them in browser bundles. Never put a service-role key, secret key or database password there. `.env.local` is ignored; do not commit credentials. Missing configuration leaves public pages available and explains why sign-in is unavailable.
+
+## Version 0.3 planner (feature branch)
+
+This branch adds real OpenStreetMap map tiles via OpenFreeMap, manual place search and an optional permission-based device location selection, loop/point-to-point route requests, map line rendering, and separate estimated exploration and transit times. Place search and routes require a signed-in user and server-side GraphHopper credentials. The browser never receives that credential.
+
+Time targets are approximate. Road styles, traffic and intersection preferences are not applied to route scoring; highway avoidance is submitted as a provider custom model but needs real-provider verification. No routes or device coordinates are saved to the database. Use this **for planning while parked only**, not as in-motion navigation. See [v0.3 integration checklist](docs/VERSION-0.3-PLAN.md).
 
 ## Account features
 
