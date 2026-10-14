@@ -16,18 +16,19 @@ Only publishable configuration belongs in `VITE_` variables: Vite embeds them in
 
 Email signup, verification/resend, login, recovery, password/email changes, global sign-out, case-insensitive unique usernames, editable display names and biographies, up to five interests, private/public profiles, avatar/banner uploads, saved drive preferences and self-service deletion are implemented. Public profiles live at `/people/:username`; a username is needed to share a profile link.
 
-Uploads accept JPEG, PNG and WebP up to 5 MB, validate signatures, decode and resize, then re-encode as WebP to remove source metadata. Storage is private. Public image access is limited to images currently referenced by a public profile. Previously downloaded copies cannot be recalled.
+Uploads accept JPEG, PNG and WebP up to 5 MB, validate signatures, decode and resize, then re-encode as WebP where supported or JPEG on browsers such as Safari that cannot export WebP. This removes source metadata; JPEG fallbacks are flattened onto white to preserve transparent images. Storage is private. Public image access is limited to images currently referenced by a public profile. Previously downloaded copies cannot be recalled.
 
 Account deletion requires typing DELETE and password reauthentication. Storage objects are removed through the Storage API before a caller-only database function deletes Auth/profile/preferences records. The database independently requires a session created within five minutes and refuses deletion while owned images remain. Cleanup and account deletion are not a single transaction: if a later step fails, the account can remain with photos already removed. The UI reports failures so users can retry.
 
 ## Database
 
-Both migrations have been applied to **Thrive only**, with existing records preserved:
+All three migrations have been applied to **Thrive only**, with existing records preserved:
 
 - `20261013201644_initial_foundation.sql`
 - `20261013210310_account_profiles_v02.sql`
+- `20261014024737_profile_media_jpeg_fallback_v021.sql`
 
-Local filenames match remote migration history. Do not reapply them manually to the live project. Review future migrations before applying them. The v0.2 migration adds profile fields, restricted column grants, public-profile read policies, private image storage policies, timestamp triggers and caller-only account deletion. Generated types are in `src/lib/database.types.ts`.
+Local filenames match remote migration history. Do not reapply them manually to the live project. Review future migrations before applying them. The v0.2 migration adds profile fields, restricted column grants, public-profile read policies, private image storage policies, timestamp triggers and caller-only account deletion. The v0.2.1 migration extends the existing private media bucket and owner-only filename checks to permit both WebP and JPEG, while retaining the 5 MB limit. Generated types are in `src/lib/database.types.ts`.
 
 ## Verification
 
@@ -47,4 +48,4 @@ See [v0.2 review and manual checklist](docs/VERSION-0.2-REVIEW.md), [original fo
 
 Configure Supabase Site URL and redirect allowlists for the exact intended origins and `/profile`, `/settings`, `/reset-password` paths. Email confirmation must remain enabled. Check SMTP delivery/rate limits and enable leaked-password protection if available for the project. Verify recovery, verification and email-change links with inboxes you control.
 
-Run the controlled two-account and Storage checks in the review document. Configure the hosting server to serve `index.html` for SPA deep links. No app deployment or merge is performed by this change.
+Run the controlled two-account and Storage checks in the review document. Vercel preview deployments serve `development` with SPA deep-link rewrites defined in `vercel.json`. The `main` production branch remains unchanged; a working preview is not a public release.
